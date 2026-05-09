@@ -1,0 +1,116 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Student or Admin profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "student"] },
+        "enrollmentId": { "type": "string" },
+        "phone": { "type": "string" },
+        "dob": { "type": "string" },
+        "currentSessionId": { "type": "string" },
+        "lastLoginAt": { "type": "string" },
+        "lastLoginIp": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "name", "role"]
+    },
+    "Attendance": {
+      "title": "Attendance",
+      "description": "Daily attendance request",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "submittedAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "date", "status"]
+    },
+    "Mark": {
+      "title": "Mark",
+      "description": "Student academic marks",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "subject": { "type": "string" },
+        "score": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["studentId", "subject", "score"]
+    },
+    "Fee": {
+      "title": "Fee",
+      "description": "Exam fee payment records",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "type": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "paid"] },
+        "paidAt": { "type": "string" },
+        "transactionId": { "type": "string" }
+      },
+      "required": ["studentId", "type", "amount", "status"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Communication between student and admin",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "content": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "isRead": { "type": "boolean" }
+      },
+      "required": ["senderId", "receiverId", "content", "timestamp"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Record of admin actions",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "action": { "type": "string" },
+        "targetId": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["adminId", "action", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user profiles"
+    },
+    "/attendance/{attendanceId}": {
+      "schema": "Attendance",
+      "description": "Stores attendance records"
+    },
+    "/marks/{markId}": {
+      "schema": "Mark",
+      "description": "Stores student marks"
+    },
+    "/fees/{feeId}": {
+      "schema": "Fee",
+      "description": "Stores payment records"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Stores chat messages"
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Stores admin activity logs"
+    }
+  }
+}

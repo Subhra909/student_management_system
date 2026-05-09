@@ -1,0 +1,81 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isAdmin() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    function isStudent() { return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student'; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- User Rules ---
+    match /users/{userId} {
+      allow get: if isSignedIn() && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && isOwner(userId) && (
+        incoming().keys().hasAll(['uid', 'email', 'name', 'role', 'createdAt']) &&
+        incoming().role == 'student' // Only admins can create admins, but everyone starts as student
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'dob', 'currentSessionId', 'lastLoginAt', 'lastLoginIp']))
+      );
+    }
+
+    // --- Attendance Rules ---
+    match /attendance/{attendanceId} {
+      allow get: if isSignedIn() && (isOwner(existing().studentId) || isAdmin());
+      allow list: if isSignedIn() && (
+        isAdmin() || (isStudent() && resource.data.studentId == request.auth.uid)
+      );
+      allow create: if isSignedIn() && isStudent() && incoming().studentId == request.auth.uid && incoming().status == 'pending';
+      allow update: if isSignedIn() && isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // --- Marks Rules ---
+    match /marks/{markId} {
+      allow get: if isSignedIn() && (isOwner(existing().studentId) || isAdmin());
+      allow list: if isSignedIn() && (
+        isAdmin() || (isStudent() && resource.data.studentId == request.auth.uid)
+      );
+      allow write: if isAdmin();
+    }
+
+    // --- Fees Rules ---
+    match /fees/{feeId} {
+      allow get: if isSignedIn() && (isOwner(existing().studentId) || isAdmin());
+      allow list: if isSignedIn() && (
+        isAdmin() || (isStudent() && resource.data.studentId == request.auth.uid)
+      );
+      allow create: if isAdmin(); // Admin sets up fee requests? Or student pays?
+      // For simplicity: Admin creates fee request, student updates to 'paid'
+      allow update: if isSignedIn() && (
+        (isStudent() && isOwner(existing().studentId) && incoming().status == 'paid' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paidAt', 'transactionId'])) ||
+        isAdmin()
+      );
+    }
+
+    // --- Messages Rules ---
+    match /messages/{messageId} {
+      allow get: if isSignedIn() && (isOwner(existing().senderId) || isOwner(existing().receiverId) || isAdmin());
+      allow list: if isSignedIn() && (
+        isAdmin() || (isStudent() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid))
+      );
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && (isOwner(existing().receiverId) || isAdmin()) && incoming().diff(existing()).affectedKeys().hasOnly(['isRead']);
+    }
+
+    // --- Audit Logs Rules ---
+    match /audit_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
