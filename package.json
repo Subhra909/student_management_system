@@ -1,14 +1,16 @@
 {
-  "name": "react-example",
+  "name": "edunexus",
+  "description": "EduNexus - A Multi-Tenant College Student Management System featuring role-based dashboards, academic tracking, automated fee billing, class timetables, and assignments.",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
     "start": "tsx server.ts",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "init-db": "tsx init-system.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
