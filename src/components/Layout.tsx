@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { LogOut, LayoutDashboard, BookOpen, ShieldCheck, Globe, Bell, ChevronDown, GraduationCap, X } from "lucide-react";
+import { LogOut, LayoutDashboard, BookOpen, ShieldCheck, Globe, Bell, ChevronDown, GraduationCap, X, Settings } from "lucide-react";
 import { cn } from "../lib/utils";
 import { motion, AnimatePresence } from "motion/react";
+import ProfileModal from "./ProfileModal";
 
 export default function Layout() {
   const { profile, logout, user } = useAuth();
@@ -12,6 +13,7 @@ export default function Layout() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifPanel, setShowNotifPanel] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => { await logout(); navigate("/login"); };
@@ -183,11 +185,20 @@ export default function Layout() {
                   {profile?.role === "superadmin" ? "Super Admin" : profile?.role === "admin" ? "Administrator" : profile?.enrollmentId || "Student"}
                 </span>
               </div>
-              <div className="avatar w-9 h-9 text-[11px] shrink-0">
-                {profile?.profilePicture
-                  ? <img src={profile.profilePicture} className="w-9 h-9 rounded-2xl object-cover" alt="" />
-                  : initials}
-              </div>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="relative group focus:outline-none"
+                title="Account Settings"
+              >
+                <div className="avatar w-9 h-9 text-[11px] shrink-0 group-hover:ring-2 group-hover:ring-sky-400 group-hover:ring-offset-2 transition-all rounded-2xl">
+                  {profile?.profilePicture
+                    ? <img src={profile.profilePicture} className="w-9 h-9 rounded-2xl object-cover" alt="" />
+                    : initials}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-sky-500 rounded-full flex items-center justify-center border-2 border-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Settings className="w-2 h-2 text-white" />
+                </div>
+              </button>
               <button
                 onClick={handleLogout}
                 className="w-9 h-9 rounded-xl flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-500 text-slate-400 transition-all"
@@ -199,6 +210,9 @@ export default function Layout() {
           )}
         </div>
       </nav>
+
+      {/* Profile & Password Modal */}
+      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
 
       {/* ── Main Content ── */}
       <main className="flex-1 flex flex-col relative overflow-hidden bg-gradient-dashboard">

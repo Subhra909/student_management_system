@@ -238,6 +238,36 @@ apiRouter.put("/auth/profile", requireAuth, async (req: any, res) => {
   }
 });
 
+// Change Password Route (available to all authenticated users)
+apiRouter.put("/auth/change-password", requireAuth, async (req: any, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "Current password and new password are required." });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters long." });
+    }
+
+    const user = await User.findOne({ uid: req.user.uid });
+    if (!user) return res.status(404).json({ error: "User not found." });
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(400).json({ error: "Current password is incorrect." });
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    // Invalidate session so user must re-login after password change
+    user.currentSessionId = uuidv4();
+    await user.save();
+
+    res.json({ message: "Password updated successfully. Please log in again with your new password." });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Student Routes Placeholder removed (duplicate)
 
 apiRouter.post("/student/attendance", requireAuth, async (req: any, res) => {
