@@ -1,6 +1,6 @@
 import "dotenv/config";
 import express from "express";
-import { createServer as createViteServer } from "vite";
+
 import path from "path";
 import { fileURLToPath } from "url";
 import rateLimit from "express-rate-limit";
@@ -119,16 +119,18 @@ app.use((err: any, req: any, res: any, _next: any) => {
 if (!process.env.VERCEL) {
   const PORT = Number(process.env.PORT) || 3000;
   if (!IS_PROD) {
-    createViteServer({
-      server: { middlewareMode: true },
-      appType: "spa",
-    }).then((vite) => {
-      app.use(vite.middlewares);
-      app.listen(PORT, "0.0.0.0", () => {
-        console.log(`✅ EduNexus server running on http://localhost:${PORT} [development]`);
+    import("vite").then(({ createServer: createViteServer }) => {
+      createViteServer({
+        server: { middlewareMode: true },
+        appType: "spa",
+      }).then((vite) => {
+        app.use(vite.middlewares);
+        app.listen(PORT, "0.0.0.0", () => {
+          console.log(`✅ EduNexus server running on http://localhost:${PORT} [development]`);
+        });
+      }).catch((err) => {
+        console.error("Vite Dev Server startup error:", err);
       });
-    }).catch((err) => {
-      console.error("Vite Dev Server startup error:", err);
     });
   } else {
     const distPath = path.join(process.cwd(), "dist");

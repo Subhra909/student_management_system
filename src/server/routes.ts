@@ -2,7 +2,7 @@ import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import { User, Attendance, Mark, Fee, Message, AuditLog, Tenant, Notification, Timetable, Assignment, AssignmentSubmission, AdmitCard } from "./db.js";
+import { connectDB, User, Attendance, Mark, Fee, Message, AuditLog, Tenant, Notification, Timetable, Assignment, AssignmentSubmission, AdmitCard } from "./db.js";
 import { v4 as uuidv4 } from "uuid";
 
 export const apiRouter = express.Router();
@@ -34,12 +34,20 @@ apiRouter.post("/system/init-superadmin", async (req, res) => {
   }
 });
 
-// Middleware to check if DB is connected
-const checkDbConnection = (req: any, res: any, next: any) => {
-  if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({ error: "Database connection is offline. Please configure your MongoDB Atlas URI in the .env file." });
+// Middleware to check if DB is connected (triggering/awaiting connection on cold starts)
+const checkDbConnection = async (req: any, res: any, next: any) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      await connectDB();
+    }
+    next();
+  } catch (err: any) {
+    console.error("[DB_CONNECTION_MIDDLEWARE_ERROR]", err);
+    return res.status(503).json({
+      error: "Database connection is offline. Please configure your MONGODB_URI in your Vercel/deployment settings.",
+      details: err.message || String(err)
+    });
   }
-  next();
 };
 
 apiRouter.use(checkDbConnection);

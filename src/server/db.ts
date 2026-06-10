@@ -1,27 +1,43 @@
 import mongoose from "mongoose";
 
-export async function connectDB() {
-  const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/edunexus";
-  try {
-    await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    });
-    console.log("✅ MongoDB Connected");
+let connectionPromise: Promise<typeof mongoose> | null = null;
 
-    // Graceful shutdown
+export async function connectDB() {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose;
+  }
+
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/edunexus";
+  
+  connectionPromise = mongoose.connect(MONGODB_URI, {
+    serverSelectionTimeoutMS: 5000, // Fail fast on Vercel to return a clean 503 instead of timing out the function
+    socketTimeoutMS: 45000,
+  }).then((m) => {
+    console.log("✅ MongoDB Connected");
+    return m;
+  }).catch((error) => {
+    console.error("=========================================");
+    console.error("ERROR: Could not connect to MongoDB!");
+    console.error(error);
+    console.error("=========================================");
+    connectionPromise = null; // Reset promise on failure so we can retry on subsequent requests
+    throw error;
+  });
+
+  // Graceful shutdown listener (only attach once)
+  if (process.listeners("SIGINT").length === 0) {
     process.on("SIGINT", async () => {
       await mongoose.connection.close();
       console.log("MongoDB connection closed.");
       process.exit(0);
     });
-  } catch (error) {
-    console.error("=========================================");
-    console.error("ERROR: Could not connect to MongoDB!");
-    console.error(error);
-    console.error("=========================================");
-    // Don't crash — server can still start and return DB error on requests
   }
+
+  return connectionPromise;
 }
 
 // ─── Tenant ────────────────────────────────────────────────────────────────
