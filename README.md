@@ -1,7 +1,3 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
 # EduNexus - Multi-Tenant College Student Management System
 
 EduNexus is a modern, enterprise-grade Multi-Tenant Student Management System (SMS) built on the **MERN** stack (MongoDB, Express.js, React, Node.js) with **Vite** and **TypeScript**. 
